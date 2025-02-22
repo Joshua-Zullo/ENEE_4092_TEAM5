@@ -98,11 +98,39 @@ void loop() {
 Zullo: I will rewrite a cleaner version of the code here.
 PSEUDO CODE
 
+# include <math.h>    //needed for certain math functions
+
+
 Declare pins (I/O)
+
 
 Declare general constants (waveform shifting, delay)
 
 Declare mu law variables 
+
+Func: setup
+
+Func: uLaw
+
+    lookat sign.
+    store sign
+    take ABS
+    
+    normalize value 
+    
+    perform logarithmic scaling
+    
+    return value (w sign)
+
+Func inuLaw
+
+    observe sign
+    store sign
+    
+
+Func Loop
+
+
 
 
 */
