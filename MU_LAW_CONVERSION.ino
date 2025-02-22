@@ -156,7 +156,8 @@ Func Loop
 ///*
 
 # include <math.h>  //math library
-
+# include <stdint.h>    //includes special data types,ex: int8_t
+ 
 
 int micPin = 41; //analog input pin
 
@@ -173,7 +174,7 @@ int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 int mu2 = 256; // = u+1
 
 // perform u law log scaling on PCM 16-bit value. Input is normalized V value (integer). Output signed 8 bit integer
-int8_t muLaw(normV){
+int8_t muLaw(int normV){
     int sign = 0; //store sign of value
     float muVal = 0; //log scaled normalized V value
     
@@ -184,14 +185,15 @@ int8_t muLaw(normV){
         sign = 1;
     }
 
-    float scaleV = normV/max //put within -1<x<1 range. Ensure float
+    float scaleV = normV/max; //put within -1<x<1 range. Ensure float
     
     muVal = (log(1+mu*scaleV)/log(mu2));
 
     int8_t result = (int8_t)(muVal*127)     //convert float to 8 bit integer
     result = result*sign;         //add polarity back
 
-    if (result < -128) {result = -128;}    //clip values for signed 8 bit integer, -128<x<127
+    //clip values for signed 8 bit integer, -128<x<127
+    // if (result < -128) {result = -128;}   since we scale by 127 probably this line redundant  
     if (result > 127) {result = 127;} 
 
     return result;
