@@ -172,8 +172,8 @@ int max = 32768 //max 16bit integer value (Absolute value)
 int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 int mu2 = 256; // = u+1
 
-// perform u law log scaling on PCM 16-bit value. Input is normalized V value (integer)
-float muLaw(normV){
+// perform u law log scaling on PCM 16-bit value. Input is normalized V value (integer). Output signed 8 bit integer
+int_8t muLaw(normV){
     int sign = 0; //store sign of value
     float muVal = 0; //log scaled normalized V value
     
@@ -186,15 +186,23 @@ float muLaw(normV){
 
     normV = normV/max //put within -1<x<1 range
     
-    muVal = sign*(log(1+mu*normV)/log(mu2);
-    return muVal;
+    muVal = (log(1+mu*normV)/log(mu2);
+
+    int_8t result = (int_8t)(muVal)     //convert float to 8 bit integer
+    result = result*sign;         //add polarity back
+
+    if (result < -128) {result = -128;}    //clip values for signed 8 bit integer, -128<x<127
+    if (result > 127) {result = 127;} 
+
+    return result;
 
     //still need to work on returning an 8-bit vs 16bit value
 }
 
 //undo log scaling on 8 bit value, return to 16-bit PCM
-float imuLaw(){
-
+float imuLaw(logU){
+    int sign = 0; //store sign 
+    int normV = 0; //PCM V in value (roughly)
 
 }
 
