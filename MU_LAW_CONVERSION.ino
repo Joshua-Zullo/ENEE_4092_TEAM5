@@ -94,3 +94,16 @@ void loop() {
 } 
 
 
+/*
+Zullo: I will rewrite a cleaner version of the code here.
+PSEUDO CODE
+
+Declare pins (I/O)
+
+Declare general constants (waveform shifting, delay)
+
+Declare mu law variables 
+
+
+*/
+
