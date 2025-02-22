@@ -110,6 +110,12 @@ Declare mu law variables
 
 Func: setup
 
+Func: normaliz (normalize audio waveform in)
+
+    subtract offset from value
+    multiply by "stretching factor" (value to get in -32k to 32k range)
+    return null
+
 Func: uLaw
 
     lookat sign.
@@ -126,11 +132,21 @@ Func inuLaw
 
     observe sign
     store sign
-    
+
+    Perform inverse log scaling
+    return unormalized value
 
 Func Loop
 
+    read analog Vin
 
+    call waveshift
+
+    call uLaw
+
+    call imuLaw
+
+    end
 
 
 */
