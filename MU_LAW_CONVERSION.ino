@@ -169,14 +169,27 @@ int max = 32768 //max 16bit integer value (Absolute value)
 
 //uLaw constants
 
-int mu = 255; //steps (0-255 = 2^8)
+int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 int mu2 = 256; // = u+1
-int sign = 0; //store sign of value
 
-// perform u law log scaling on PCM 16-bit value
-float muLaw(){
+// perform u law log scaling on PCM 16-bit value. Input is normalized V value (integer)
+float muLaw(normV){
+    int sign = 0; //store sign of value
+    float muVal = 0; //log scaled normalized V value
+    
+    if (normV <0){    // is normV<0? then sign = -1
+        sign = -1;
+        normV = normV*sign; //take ABS(normV)
+    } else {
+        sign = 1;
+    }
 
+    normV = normV/max //put within -1<x<1 range
+    
+    muVal = sign*(log(1+mu*normV)/log(mu2);
+    return muVal;
 
+    //still need to work on returning an 8-bit vs 16bit value
 }
 
 //undo log scaling on 8 bit value, return to 16-bit PCM
@@ -189,7 +202,17 @@ float imuLaw(){
 int normV(Vin){
     Vin = Vin-offset;
     Vin = Vin*scale;
+    return Vin; //return properly scaled value
 }   
 
+//Idk what this is
+void setup(){
+}
+
+//main body of code that runs continuously
+void loop(){
+
+
+}
 //*/
 
