@@ -153,24 +153,17 @@ Func Loop
 
 // actual code below
 
-///*
 
 # include <math.h>  //math library
 # include <stdint.h>    //includes special data types,ex: int8_t
- 
-
-int micPin = 41; //analog input pin
 
 //declare general constants
-
 int scale = 78; //scale Vin to full 16 bit value
 int offset = 388;    //offset DC bias (1.25V ~388 ADC)
 int del = 20; //ms delay in printing values
 int max = 32768; //max 16bit integer value (Absolute value)
-
-//uLaw constants
-
 int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
+int micPin = 41; //analog input pin
 
 // perform u law log scaling on PCM 16-bit value. Input is normalized V value. Output signed 8 bit integer
 int8_t muLaw(int normV){
@@ -188,7 +181,7 @@ int8_t muLaw(int normV){
     result = result*sign;         //add polarity back
     
     //clip values for signed 8 bit integer, -128<x<127
-    if (result > 127) {result = 127;} 
+    if (result > 127) {result = 127;} //this may not be necessary since our PCM value should be under the 2^15 max but oh well
     return result;}
 
 //undo log scaling on 8 bit value, return to 16-bit PCM
@@ -209,7 +202,7 @@ int16_t imuLaw(int8_t muVal){
 }
 
 //scale Vin. Takes argument (Vin)
-int normV(Vin){
+int16_t normV(int16_t Vin){
     Vin = Vin-offset;
     Vin = Vin*scale;
     return Vin; //return properly scaled value
@@ -221,8 +214,16 @@ void setup(){
 
 //main body of code that runs continuously
 void loop(){
+    int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
+    Vin = normV(Vin); //Vin normalized
+    Serial.print(Vin);
+    Serial.print(",");
+    
+    int8_t enPCM = muLaw(Vin);    //declare 8 bit int enPCM which equal to log PCM value
 
+    Vin = imuLaw(enPCM);    // undoes uLaw encoding. Have 16bit PCM value again.
 
+    delay(del);
 }
-//*/
+
 
