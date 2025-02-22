@@ -1,98 +1,3 @@
-
-# include <math.h>    // needed for ln function (ln)
-
-int micPin = 41; // Use analog pin "X" for V input
-int del = 20; //delay
-int offset = 388;  //avg value of DC offset (1.25V)
-int stretch = 78;  // integer to multiply the Vin value by to stretch to a 16 bit valye
-float valSt = 0.0;  // 16 bit Vin value 
-//uint8_t
-float scale = 32768.0;  //16 bit range +/-
-
-float Vin = 0; //Digital Vin value
-float normVal = 0; //normalized 16bit value
-
-
-
-int mu = 255; //steps mu law
-float den = 0; // denominator of uLaw
-float num = 0;
-int sign = 0;
-float muVal = 0;
-float imuVal = 0;
-float imuVal2 = 0;
-
-
-void setup() {
-    //Serial.begin(115200);
-}
-
-// function to convert 16 bit value to logarithmic scale (8 bit value)
-float uLaw() {
-
-  float result = 0; // value to return (float!)
-
-  den = log(1+mu); //denominator 
-
-    if (valSt < 0){
-      valSt = valSt *(-1.0);
-      sign = -1;
-    } else {
-      sign = 1;
-    }
-
-  normVal = valSt/(scale);  //normalize, gets value within -1:1 ratio
-  num = log(1+mu*normVal);  // numerator of uLaw conv
-  result = sign*(num/den);
-return result;}
-
-//given 8 bit log value, return 16 bit uncompressed value
-
-float invuLaw () {
-    if (muVal <0){
-      muVal = muVal * (-1.0);
-      sign = -1;
-    } else {
-      sign = 1;
-    }
-  
-
-  imuVal = sign*(pow(256, muVal)-1)/(mu);
-  imuVal = imuVal *scale;
-  return imuVal;
-}
-
-
-
-//just check muLaw with manual values, not even w
-void loop() {
-    Vin = 0;    
-    Vin = analogRead(micPin);
-
-    Serial.print(Vin);     //print the basic Vin
-    Serial.print(",");
-
-    Vin = Vin -offset; //get rid of DC offset
-
-    valSt = Vin*stretch;  //multiply to get 16 bits
-
-    Serial.print(valSt);     //print shifted V signal
-    Serial.print(",");
-
-
-    muVal = uLaw();
-    Serial.print(muVal, 12); // print log scale!
-    Serial.print(",");
-
-    imuVal2  = invuLaw();
-    Serial.println(imuVal2, 12);
-
-
-    delay(del);  // Print every x ms
-    
-} 
-
-
 /*
 Zullo: I will rewrite a cleaner version of the code here.
 I will also need to work on getting our uLaw log value to 8 bits vs native 16 bits. 
@@ -158,12 +63,12 @@ Func Loop
 # include <stdint.h>    //includes special data types,ex: int8_t
 
 //declare general constants
-int scale = 78; //scale Vin to full 16 bit value
-int offset = 388;    //offset DC bias (1.25V ~388 ADC)
-int del = 20; //ms delay in printing values
-int max = 32768; //max 16bit integer value (Absolute value)
-int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
-int micPin = 41; //analog input pin
+const int scale = 78; //scale Vin to full 16 bit value
+const int offset = 388;    //offset DC bias (1.25V ~388 ADC)
+const int del = 20; //ms delay in printing values
+const int max = 32768; //max 16bit integer value (Absolute value)
+const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
+const int micPin = 41; //analog input pin
 
 // perform u law log scaling on PCM 16-bit value. Input is normalized V value. Output signed 8 bit integer
 int8_t muLaw(int normV){
@@ -193,7 +98,7 @@ int16_t imuLaw(int8_t muVal){
         sign = -1;
         muVal = muVal*sign; } //take ABS(muVal)
     
-    float scaleMu = float(muVal)/ 127.0; //convert to floating point -1<x<1 from 8 bit scale
+    float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
     float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
     imuVal = sign*imuVal*max; //scale back to normal PCM range
     int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
@@ -216,13 +121,15 @@ void setup(){
 void loop(){
     int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
     Vin = normV(Vin); //Vin normalized
-    Serial.print(Vin);
+    Serial.print(Vin); //print norm Vin
     Serial.print(",");
     
     int8_t enPCM = muLaw(Vin);    //declare 8 bit int enPCM which equal to log PCM value
-
+    Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
+    Serial.print(",");
+    
     Vin = imuLaw(enPCM);    // undoes uLaw encoding. Have 16bit PCM value again.
-
+    Serial.println(Vin); // print retreived PCM Vin value. Should be within 2% error
     delay(del);
 }
 
