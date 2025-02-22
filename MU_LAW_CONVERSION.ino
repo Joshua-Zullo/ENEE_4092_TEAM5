@@ -57,7 +57,6 @@ float invuLaw () {
     }
   
 
-
   imuVal = sign*(pow(256, muVal)-1)/(mu);
   imuVal = imuVal *scale;
   return imuVal;
@@ -166,6 +165,7 @@ int micPin = 41; //analog input pin
 int scale = 78; //scale Vin to full 16 bit value
 int offset = 388;    //offset DC bias (1.25V ~388 ADC)
 int del = 20; //ms delay in printing values
+int max = 32768 //max 16bit integer value (Absolute value)
 
 //uLaw constants
 
@@ -184,5 +184,12 @@ float imuLaw(){
 
 
 }
+
+//scale Vin. Takes argument (Vin)
+int normV(Vin){
+    Vin = Vin-offset;
+    Vin = Vin*scale;
+}   
+
 //*/
 
