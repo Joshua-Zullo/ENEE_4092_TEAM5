@@ -171,39 +171,41 @@ int max = 32768; //max 16bit integer value (Absolute value)
 //uLaw constants
 
 int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
-int mu2 = 256; // = u+1
 
-// perform u law log scaling on PCM 16-bit value. Input is normalized V value (integer). Output signed 8 bit integer
+// perform u law log scaling on PCM 16-bit value. Input is normalized V value. Output signed 8 bit integer
 int8_t muLaw(int normV){
-    int sign = 0; //store sign of value
+    int sign = 1; //store sign of value
     float muVal = 0; //log scaled normalized V value
     
     if (normV <0){    // is normV<0? then sign = -1
         sign = -1;
-        normV = normV*sign; //take ABS(normV)
-    } else {
-        sign = 1;
-    }
-
+        normV = normV*sign; } //take ABS(normV)
+  
     float scaleV = normV/max; //put within -1<x<1 range. Ensure float
-    
-    muVal = (log(1+mu*scaleV)/log(mu2));
+    muVal = (log(1+mu*scaleV)/log(256));
 
-    int8_t result = (int8_t)(muVal*127)     //convert float to 8 bit integer
+    int8_t result = (int8_t)(muVal*127);     //convert float to 8 bit integer
     result = result*sign;         //add polarity back
-
+    
     //clip values for signed 8 bit integer, -128<x<127
-    // if (result < -128) {result = -128;}   since we scale by 127 probably this line redundant  
     if (result > 127) {result = 127;} 
-
-    return result;
-}
+    return result;}
 
 //undo log scaling on 8 bit value, return to 16-bit PCM
-float imuLaw(logU){
-    int sign = 0; //store sign 
+int16_t imuLaw(int8_t muVal){
+    int sign = 1; //store sign 
     int normV = 0; //PCM V in value (roughly)
-
+    
+     if (muVal <0){    // is muVal<0? then sign = -1
+        sign = -1;
+        muVal = muVal*sign; } //take ABS(muVal)
+    
+    float scaleMu = float(muVal)/ 127.0; //convert to floating point -1<x<1 from 8 bit scale
+    float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
+    imuVal = sign*imuVal*max; //scale back to normal PCM range
+    int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
+    
+    return result;
 }
 
 //scale Vin. Takes argument (Vin)
