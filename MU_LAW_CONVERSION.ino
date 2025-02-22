@@ -165,7 +165,7 @@ int micPin = 41; //analog input pin
 int scale = 78; //scale Vin to full 16 bit value
 int offset = 388;    //offset DC bias (1.25V ~388 ADC)
 int del = 20; //ms delay in printing values
-int max = 32768 //max 16bit integer value (Absolute value)
+int max = 32768; //max 16bit integer value (Absolute value)
 
 //uLaw constants
 
@@ -173,7 +173,7 @@ int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 int mu2 = 256; // = u+1
 
 // perform u law log scaling on PCM 16-bit value. Input is normalized V value (integer). Output signed 8 bit integer
-int_8t muLaw(normV){
+int8_t muLaw(normV){
     int sign = 0; //store sign of value
     float muVal = 0; //log scaled normalized V value
     
@@ -184,19 +184,17 @@ int_8t muLaw(normV){
         sign = 1;
     }
 
-    normV = normV/max //put within -1<x<1 range
+    float scaleV = normV/max //put within -1<x<1 range. Ensure float
     
-    muVal = (log(1+mu*normV)/log(mu2);
+    muVal = (log(1+mu*scaleV)/log(mu2));
 
-    int_8t result = (int_8t)(muVal)     //convert float to 8 bit integer
+    int8_t result = (int8_t)(muVal*127)     //convert float to 8 bit integer
     result = result*sign;         //add polarity back
 
     if (result < -128) {result = -128;}    //clip values for signed 8 bit integer, -128<x<127
     if (result > 127) {result = 127;} 
 
     return result;
-
-    //still need to work on returning an 8-bit vs 16bit value
 }
 
 //undo log scaling on 8 bit value, return to 16-bit PCM
