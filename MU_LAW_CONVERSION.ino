@@ -96,6 +96,7 @@ void loop() {
 
 /*
 Zullo: I will rewrite a cleaner version of the code here.
+I will also need to work on getting our uLaw log value to 8 bits vs native 16 bits. 
 PSEUDO CODE
 
 # include <math.h>    //needed for certain math functions
@@ -150,4 +151,38 @@ Func Loop
 
 
 */
+
+// actual code below
+
+///*
+
+# include <math.h>  //math library
+
+
+int micPin = 41; //analog input pin
+
+//declare general constants
+
+int scale = 78; //scale Vin to full 16 bit value
+int offset = 388;    //offset DC bias (1.25V ~388 ADC)
+int del = 20; //ms delay in printing values
+
+//uLaw constants
+
+int mu = 255; //steps (0-255 = 2^8)
+int mu2 = 256; // = u+1
+int sign = 0; //store sign of value
+
+// perform u law log scaling on PCM 16-bit value
+float muLaw(){
+
+
+}
+
+//undo log scaling on 8 bit value, return to 16-bit PCM
+float imuLaw(){
+
+
+}
+//*/
 
