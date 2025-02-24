@@ -66,7 +66,7 @@ Func Loop
 const int scale = 78; //scale Vin to full 16 bit value
 const int offset = 388;    //offset DC bias (1.25V ~388 ADC)
 const int del = 20; //ms delay in printing values
-const int ceil = 32768; //ceiling of 16 bit integer value (Absolute value)   
+const int ceil_16 = 32768; //ceiling of 16 bit integer value (Absolute value)   
 const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 const int micPin = 41; //analog input pin
 
@@ -79,7 +79,7 @@ int8_t muLaw(int normV){
         sign = -1;
         normV = normV*sign; } //take ABS(normV)
   
-    float scaleV = normV/ceil; //put within -1<x<1 range. Ensure float
+    float scaleV = normV/ceil_16; //put within -1<x<1 range. Ensure float
     muVal = (log(1+mu*scaleV)/log(256));
 
     int8_t result = (int8_t)(muVal*127);     //convert float to 8 bit integer
@@ -100,7 +100,7 @@ int16_t imuLaw(int8_t muVal){
     
     float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
     float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
-    imuVal = sign*imuVal*ceil; //scale back to normal PCM range
+    imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
     int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
     
     return result;
