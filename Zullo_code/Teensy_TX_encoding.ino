@@ -67,6 +67,20 @@ int16_t imuLaw(int8_t muVal){
     int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
     return result;}
 
+//not normally utilized
+void Blink(byte PIN, byte DELAY_MS, byte loops) {
+  for (byte i=0; i<loops; i++)  {
+    digitalWrite(PIN,HIGH);
+    delay(DELAY_MS);
+    digitalWrite(PIN,LOW);
+    delay(DELAY_MS);}}
+
+//scale Vin. Takes argument (Vin)
+int16_t normV(int16_t Vin){
+    Vin = Vin-offset;
+    Vin = Vin*scale; //multiply to reach full 16-bit value
+    return Vin; }  
+
 void setup() {
   Serial.begin(115200);
   //while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
@@ -111,19 +125,29 @@ void setup() {
   Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");}
 
 
-
+//main body of code that runs continuously
 void loop() {
-  delay(1000);  // Wait 1 second between transmits, could also 'sleep' here!
+  delay(1000);  // Wait "x" ms before transmitt
 
-  char radiopacket[20] = "Hello World #";
+  //read Vin
+    //normaliz Vin
+    //encode 
+    //set packet to encoded
+     int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
+    Vin = normV(Vin); //Vin normalized
+    Serial.print(Vin); //print norm Vin
+    Serial.print(",");
+
+  /*
+    char radiopacket[20] = "Hello World #";
   itoa(packetnum++, radiopacket+13, 10);
   Serial.print("Sending "); Serial.println(radiopacket);
-  
+  */
   // Send a message!
   rf69.send((uint8_t *)radiopacket, strlen(radiopacket));
   rf69.waitPacketSent();
 
-  // Now wait for a reply
+  /* Now wait for a reply
   uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
   uint8_t len = sizeof(buf);
 
@@ -139,37 +163,11 @@ void loop() {
   } else {
     Serial.println("No reply, is another RFM69 listening?");
   }
+    */
 }
 
-//not normally utilized
-void Blink(byte PIN, byte DELAY_MS, byte loops) {
-  for (byte i=0; i<loops; i++)  {
-    digitalWrite(PIN,HIGH);
-    delay(DELAY_MS);
-    digitalWrite(PIN,LOW);
-    delay(DELAY_MS);}
-}
-
-//scale Vin. Takes argument (Vin)
-int16_t normV(int16_t Vin){
-    Vin = Vin-offset;
-    Vin = Vin*scale; //multiply to reach full 16-bit value
-    return Vin; 
-}   
-
-//Idk what this is
-void setup(){
-   // Serial.begin(115200);
-}
-
-//main body of code that runs continuously
 void loop(){
-    //Serial.println("start!");
-    int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
-    Vin = normV(Vin); //Vin normalized
-    Serial.print(Vin); //print norm Vin
-    Serial.print(",");
-
+   
     int8_t enPCM = muLaw(Vin);    //declare 8 bit int enPCM which equal to log PCM value
     Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
     Serial.print(",");
