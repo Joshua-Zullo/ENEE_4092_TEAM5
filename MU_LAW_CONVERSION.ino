@@ -65,13 +65,14 @@ Func Loop
 //declare general constants
 const int scale = 78; //scale Vin to full 16 bit value
 const int offset = 388;    //offset DC bias (1.25V ~388 ADC)
-const int del = 20; //ms delay in printing values
+const int del = 10; //ms delay in printing values
 const int ceil_16 = 32768; //ceiling of 16 bit integer value (Absolute value)   
 const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 const int micPin = 41; //analog input pin
 
+
 // perform u law log scaling on PCM 16-bit value. Input is normalized V value. Output signed 8 bit integer
-int8_t muLaw(int normV){
+int8_t muLaw(int16_t normV){
     int sign = 1; //store sign of value
     float muVal = 0; //log scaled normalized V value
     
@@ -79,7 +80,9 @@ int8_t muLaw(int normV){
         sign = -1;
         normV = normV*sign; } //take ABS(normV)
   
-    float scaleV = normV/ceil_16; //put within -1<x<1 range. Ensure float
+    float scaleV = (float)(normV)/(float)(ceil_16); //put within -1<x<1 range. Ensure float
+    //Serial.println("scaled V:");
+    //Serial.println(scaleV);
     muVal = (log(1+mu*scaleV)/log(256));
 
     int8_t result = (int8_t)(muVal*127);     //convert float to 8 bit integer
@@ -114,22 +117,24 @@ int16_t normV(int16_t Vin){
 
 //Idk what this is
 void setup(){
+   // Serial.begin(115200);
 }
 
 //main body of code that runs continuously
 void loop(){
+    //Serial.println("start!");
     int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
     Vin = normV(Vin); //Vin normalized
     Serial.print(Vin); //print norm Vin
     Serial.print(",");
-    
+
     int8_t enPCM = muLaw(Vin);    //declare 8 bit int enPCM which equal to log PCM value
     Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
     Serial.print(",");
     
+    
     Vin = imuLaw(enPCM);    // undoes uLaw encoding. Have 16bit PCM value again.
     Serial.println(Vin); // print retreived PCM Vin value. Should be within 2% error
+    
     delay(del);
 }
-
-
