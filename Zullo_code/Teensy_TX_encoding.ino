@@ -1,15 +1,20 @@
-// rf69 demo tx rx.pde
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple messageing client
-// with the RH_RF69 class. RH_RF69 class does not provide for addressing or
-// reliability, so you should only use RH_RF69  if you do not need the higher
-// level messaging abilities.
+
 // It is designed to work with the other example rf69_server.
 // Demonstrates the use of AES encryption, setting the frequency and modem 
 // configuration
 
-#include <SPI.h>
-#include <RH_RF69.h>
+# include <SPI.h>
+# include <RH_RF69.h>
+# include <math.h>  //math library
+# include <stdint.h>    //includes special data types,ex: int8_t
+
+//declare general constants
+const int scale = 78; //scale Vin to full 16 bit value
+const int offset = 388;    //offset DC bias (1.25V ~388 ADC)
+const int del = 10; //ms delay in printing values
+const int ceil_16 = 32768; //ceiling of 16 bit integer value (Absolute value)   
+const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
+const int micPin = 41; //analog input pin
 
 /************ Radio Setup ***************/
 
@@ -28,8 +33,41 @@ RH_RF69 rf69(RFM69_CS,RFM69_INT);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
 
-void setup() 
-{
+// perform u law log scaling on PCM 16-bit value. Input is normalized V value. Output signed 8 bit integer
+int8_t muLaw(int16_t normV){
+    int sign = 1; //store sign of value
+    float muVal = 0; //log scaled normalized V value
+    
+    if (normV <0){    // is normV<0? then sign = -1
+        sign = -1;
+        normV = normV*sign; } //take ABS(normV)
+  
+    float scaleV = (float)(normV)/(float)(ceil_16); //put within -1<x<1 range. Ensure float
+    muVal = (log(1+mu*scaleV)/log(256));
+
+    int8_t result = (int8_t)(muVal*127);     //convert float to 8 bit integer
+    result = result*sign;         //add polarity back
+  
+    if (result > 127) {result = 127;} //clip values for signed 8 bit integer, -128<x<127
+    Serial.print(result);
+    Serial.print(",");
+    return result;}
+
+//undo log scaling on 8 bit value, return to 16-bit PCM
+int16_t imuLaw(int8_t muVal){
+    int sign = 1; //store sign 
+    
+     if (muVal <0){    // is muVal<0? then sign = -1
+        sign = -1;
+        muVal = muVal*sign; } //take ABS(muVal)
+    
+    float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
+    float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
+    imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
+    int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
+    return result;}
+
+void setup() {
   Serial.begin(115200);
   //while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
@@ -70,8 +108,7 @@ void setup()
   
   //pinMode(LED, OUTPUT);
 
-  Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
-}
+  Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");}
 
 
 
@@ -110,69 +147,14 @@ void Blink(byte PIN, byte DELAY_MS, byte loops) {
     digitalWrite(PIN,HIGH);
     delay(DELAY_MS);
     digitalWrite(PIN,LOW);
-    delay(DELAY_MS);
-  }
-}
-
-
-//================  encoding code below here
-
-
-# include <math.h>  //math library
-# include <stdint.h>    //includes special data types,ex: int8_t
-
-//declare general constants
-const int scale = 78; //scale Vin to full 16 bit value
-const int offset = 388;    //offset DC bias (1.25V ~388 ADC)
-const int del = 10; //ms delay in printing values
-const int ceil_16 = 32768; //ceiling of 16 bit integer value (Absolute value)   
-const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
-const int micPin = 41; //analog input pin
-
-
-// perform u law log scaling on PCM 16-bit value. Input is normalized V value. Output signed 8 bit integer
-int8_t muLaw(int16_t normV){
-    int sign = 1; //store sign of value
-    float muVal = 0; //log scaled normalized V value
-    
-    if (normV <0){    // is normV<0? then sign = -1
-        sign = -1;
-        normV = normV*sign; } //take ABS(normV)
-  
-    float scaleV = (float)(normV)/(float)(ceil_16); //put within -1<x<1 range. Ensure float
-    muVal = (log(1+mu*scaleV)/log(256));
-
-    int8_t result = (int8_t)(muVal*127);     //convert float to 8 bit integer
-    result = result*sign;         //add polarity back
-    
-    //clip values for signed 8 bit integer, -128<x<127
-    if (result > 127) {result = 127;} //this may not be necessary since our PCM value should be under the 2^15 max but oh well
-
-    Serial.print(result);
-    Serial.print(",");
-    return result;}
-
-//undo log scaling on 8 bit value, return to 16-bit PCM
-int16_t imuLaw(int8_t muVal){
-    int sign = 1; //store sign 
-    
-     if (muVal <0){    // is muVal<0? then sign = -1
-        sign = -1;
-        muVal = muVal*sign; } //take ABS(muVal)
-    
-    float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
-    float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
-    imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
-    int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
-    
-    return result;
+    delay(DELAY_MS);}
 }
 
 //scale Vin. Takes argument (Vin)
 int16_t normV(int16_t Vin){
     Vin = Vin-offset;
-    Vin = Vin*scale;
-    return Vin; //return properly scaled value
+    Vin = Vin*scale; //multiply to reach full 16-bit value
+    return Vin; 
 }   
 
 //Idk what this is
