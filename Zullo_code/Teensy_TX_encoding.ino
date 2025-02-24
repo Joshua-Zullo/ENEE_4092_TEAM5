@@ -138,43 +138,16 @@ void loop() {
     Serial.print(Vin); //print norm Vin
     Serial.print(",");
 
-  /*
-    char radiopacket[20] = "Hello World #";
-  itoa(packetnum++, radiopacket+13, 10);
-  Serial.print("Sending "); Serial.println(radiopacket);
-  */
-  // Send a message!
-  rf69.send((uint8_t *)radiopacket, strlen(radiopacket));
-  rf69.waitPacketSent();
-
-  /* Now wait for a reply
-  uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];
-  uint8_t len = sizeof(buf);
-
-  if (rf69.waitAvailableTimeout(500))  { 
-    // Should be a reply message for us now   
-    if (rf69.recv(buf, &len)) {
-      Serial.print("Got a reply: ");
-      Serial.println((char*)buf);
-      //Blink(LED, 50, 3); //blink LED 3 times, 50ms between blinks
-    } else {
-      Serial.println("Receive failed");
-    }
-  } else {
-    Serial.println("No reply, is another RFM69 listening?");
-  }
-    */
-}
-
-void loop(){
-   
     int8_t enPCM = muLaw(Vin);    //declare 8 bit int enPCM which equal to log PCM value
     Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
     Serial.print(",");
     
-    
-    Vin = imuLaw(enPCM);    // undoes uLaw encoding. Have 16bit PCM value again.
-    Serial.println(Vin); // print retreived PCM Vin value. Should be within 2% error
-    
-    delay(del);
-}
+
+  
+    //char radiopacket[8] = "Hello World #";
+    int8_t radiopacket[8] = enPCM; //radio packet of uLaw PCM value
+  
+  // Send a message!
+  rf69.send((uint8_t *)radiopacket, strlen(radiopacket));
+  rf69.waitPacketSent();}
+
