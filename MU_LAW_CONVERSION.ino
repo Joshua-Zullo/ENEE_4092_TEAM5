@@ -92,7 +92,6 @@ int8_t muLaw(int normV){
 //undo log scaling on 8 bit value, return to 16-bit PCM
 int16_t imuLaw(int8_t muVal){
     int sign = 1; //store sign 
-    int normV = 0; //PCM V in value (roughly)
     
      if (muVal <0){    // is muVal<0? then sign = -1
         sign = -1;
