@@ -145,9 +145,9 @@ void loop() {
 
   
     //char radiopacket[8] = "Hello World #";
-    int8_t radiopacket[8] = enPCM; //radio packet of uLaw PCM value
+    int8_t radiopacket[1] = {enPCM}; //radio packet of uLaw PCM value
   
   // Send a message!
-  rf69.send((uint8_t *)radiopacket, strlen(radiopacket));
+  rf69.send((uint8_t *)radiopacket, sizeof(radiopacket));
   rf69.waitPacketSent();}
 
