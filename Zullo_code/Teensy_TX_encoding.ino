@@ -16,6 +16,9 @@ const int ceil_16 = 32768; //ceiling of 16 bit integer value (Absolute value)
 const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 const int micPin = 41; //analog input pin
 
+const unsigned long sampTime = 125;        //125 uS time segment
+unsigned long waitTime = 0;    //previous time segment
+
 /************ Radio Setup ***************/
 
 // Change to 434.0 or other frequency, must match RX's freq!
@@ -126,25 +129,22 @@ void setup() {
 
 
 //main body of code that runs continuously
-void loop() {
-  delay(1000);  // Wait "x" ms before transmitt
+void loop() { 
 
-  //read Vin
-    //normaliz Vin
-    //encode 
-    //set packet to encoded
+    //timing loop. Only ends after 125uS
+    waitTime += sampTime;   //set timer to current time
+    while((micros()<waitTime){
+           //run while our time is less than 125uS from previous reading
+    } //then run sampling normally
      int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
     Vin = normV(Vin); //Vin normalized
     Serial.print(Vin); //print norm Vin
     Serial.print(",");
 
-    int8_t enPCM = muLaw(Vin);    //declare 8 bit int enPCM which equal to log PCM value
+    int8_t enPCM = muLaw(Vin);    // 8 bit int enPCM which equal to log PCM value
     Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
     Serial.print(",");
-    
 
-  
-    //char radiopacket[8] = "Hello World #";
     int8_t radiopacket[1] = {enPCM}; //radio packet of uLaw PCM value
   
   // Send a message!
