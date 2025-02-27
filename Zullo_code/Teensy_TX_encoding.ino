@@ -1,7 +1,9 @@
-
 // It is designed to work with the other example rf69_server.
 // Demonstrates the use of AES encryption, setting the frequency and modem 
 // configuration
+
+//consider disabling the serial.print for actual proper testing
+//check the packet overhead as we only transmit 1 byte per packet
 
 # include <SPI.h>
 # include <RH_RF69.h>
@@ -26,6 +28,7 @@ unsigned long waitTime = 0;    //previous time segment
 
 //For Teensy 3.x and T4.x the following format is required to operate correctly
 //This is a limitation of the RadioHead radio drivers
+//
 #define RFM69_RST     8 // RST to pin "x"
 #define RFM69_CS      7 // CS to pin "y"
 #define RFM69_INT     digitalPinToInterrupt(6)  //G0, hardware interupt
@@ -86,10 +89,10 @@ int16_t normV(int16_t Vin){
 
 void setup() {
   Serial.begin(115200);
-  //while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
+  while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
 
   //For Teensy 3.x and T4.x the following format is required to operate correctly
-  //pinMode(LED, OUTPUT);     
+//  pinMode(LED, OUTPUT);     
   pinMode(RFM69_RST, OUTPUT);
   digitalWrite(RFM69_RST, LOW);
 
@@ -116,15 +119,13 @@ void setup() {
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
   // ishighpowermodule flag set like this:
-  rf69.setTxPower(20);  // range from 14-20 for power, 2nd arg must be true for 69HCW
+  rf69.setTxPower(14, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
 
   // The encryption key has to be the same as the one in the server
   uint8_t key[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
                     0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
   rf69.setEncryptionKey(key);
   
-  //pinMode(LED, OUTPUT);
-
   Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");}
 
 
@@ -132,22 +133,25 @@ void setup() {
 void loop() { 
 
     //timing loop. Only ends after 125uS
-    waitTime += sampTime;   //set timer to current time
-    while((micros()<waitTime){
+    waitTime += sampTime;   //set wait 125uS after itself
+
+    while((micros()<waitTime)){
            //run while our time is less than 125uS from previous reading
     } //then run sampling normally
+
      int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
     Vin = normV(Vin); //Vin normalized
-    Serial.print(Vin); //print norm Vin
-    Serial.print(",");
+    //Serial.print(Vin); //print norm Vin
+    //Serial.print(",");
 
     int8_t enPCM = muLaw(Vin);    // 8 bit int enPCM which equal to log PCM value
-    Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
-    Serial.print(",");
+    //Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
+    //Serial.print(",");
 
     int8_t radiopacket[1] = {enPCM}; //radio packet of uLaw PCM value
-  
+
   // Send a message!
   rf69.send((uint8_t *)radiopacket, sizeof(radiopacket));
+  rf69.waitPacketSent();}
   rf69.waitPacketSent();}
 
