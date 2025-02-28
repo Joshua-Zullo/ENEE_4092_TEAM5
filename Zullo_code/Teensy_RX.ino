@@ -114,7 +114,42 @@ have for iteratively pullout each component and play them
 
 we need it to play faster than it receives the next package?
 
+*/
+
+/* 
+
+PSEUDO CODE
+
+-create buffer with variabled for storing head and tail position
+
+play audio loop every 125uS!!
+
+main loop {
+	if done receiving
+		if data is right size, 
+			store data (function!)
+}
+
+store data 
+
+		for loop iteratively stores
+
+		head pointer for buffer changes…
+			byte count ticks
 
 
 
+
+play audio function{
+
+		if we have data in buffer
+			store data from buffer array (end data)
+			change tail index
+			decrease count
+			
+			decode uLAw
+		play decoded value (or just print it)
+
+
+}
 */
