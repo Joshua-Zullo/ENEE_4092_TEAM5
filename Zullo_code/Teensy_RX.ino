@@ -21,11 +21,32 @@
 const int bufferSize = 120; //buffer 120 samples large. can increase if needed
 const int packetSize = 12;	// byte payload per packet
 
+volatile uint8_t audioBuffer[bufferSize];	//buffer array which stores samples
+volatile int8_t bufferHead = 0	//head pointer for buffer
+volatile int8_t bufferTail = 0;  //  Tail pointer for circular buffer
+volatile int8_t bufferCount = 0;  // Number of bytes currently stored in buffer
+
+
 IntervalTimer playbackTimer
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
+
+//undo log scaling on 8 bit value, return to 16-bit PCM
+int16_t imuLaw(int8_t muVal){
+    int sign = 1; //store sign 
+     if (muVal <0){    // is muVal<0? then sign = -1
+        sign = -1;
+        muVal = muVal*sign; } //take ABS(muVal)
+    
+    float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
+    float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
+    imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
+    int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
+    
+    return result;
+}
 
 void setup() {
   Serial.begin(115200);
@@ -58,7 +79,7 @@ void setup() {
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
 
-	playbackTimer.begin(playAudio(), 125 )
+	playbackTimer.begin(playAudio(), 125 ) //start running the play audio function every 125 uS.
 
   }
 
@@ -75,39 +96,21 @@ void setup() {
 }
 
 void loop() {
- if (rf69.available()) {
-    uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];  // Buffer for incoming data
-    uint8_t len = sizeof(buf);
-
-    if (rf69.recv(buf, &len)) {  // Attempt to receive
-        if (len > 0) {
-            int8_t receivedValue = (int8_t)buf[0];  // Convert received byte to signed int8_t
-
-            Serial.print("Received Value: ");
-            Serial.println(receivedValue);  // Print as integer
-
-            Serial.print("RSSI: ");
-            Serial.println(rf69.lastRssi(), DEC);
+	// Check if a new packet has been received from the radio module
+    if (radio.receiveDone()) {
+        if (radio.DATALEN == packetSize) {  // Ensure packet is the correct size
+            //storePacket(radio.DATA, packet_Size);  // Store received audio data in buffer. only for separate function
         }
-    } else {
-        Serial.println("Receive failed");
-    } 
-  } else{ Serial.println("Nuffin here"); }
-
-  delay(10); //prevent "serial flooding???"
+    }
 } 
 
-void Blink(byte PIN, byte DELAY_MS, byte loops) {
-  for (byte i=0; i<loops; i++)  {
-    digitalWrite(PIN,HIGH);
-    delay(DELAY_MS);
-    digitalWrite(PIN,LOW);
-    delay(DELAY_MS);
-  }
+void playAudio(){
+	if (bufferCount>0){ 		//only play if data stored
+		
+
+
+	}	
 }
-
-
-
 /*
 Add decoding for 12 byte payload packages
 
