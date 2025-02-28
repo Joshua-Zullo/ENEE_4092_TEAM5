@@ -21,8 +21,9 @@
 const int bufferSize = 120; //buffer 120 samples large. can increase if needed
 const int packetSize = 12;	// byte payload per packet
 
-volatile uint8_t audioBuffer[bufferSize];	//buffer array which stores samples
-volatile int8_t bufferHead = 0	//head pointer for buffer
+volatile int8_t audioBuffer[bufferSize];	//buffer array which stores samples
+//is this int8_t datatype needed? I think so; they should be 8 bit samples
+volatile int8_t bufferHead = 0;	//head pointer for buffer
 volatile int8_t bufferTail = 0;  //  Tail pointer for circular buffer
 volatile int8_t bufferCount = 0;  // Number of bytes currently stored in buffer
 
@@ -99,18 +100,34 @@ void loop() {
 	// Check if a new packet has been received from the radio module
     if (radio.receiveDone()) {
         if (radio.DATALEN == packetSize) {  // Ensure packet is the correct size
-            //storePacket(radio.DATA, packet_Size);  // Store received audio data in buffer. only for separate function
+            storePacket(radio.DATA, packet_Size);  // Store received audio data in buffer. only for separate function
         }
     }
 } 
 
 void playAudio(){
 	if (bufferCount>0){ 		//only play if data stored
-		
+		int8_t compSamp = audioBuffer[bufferTail];	//our uLaw sample is taken from the end of the buffer
+		bufferTail = (bufferTail+1) % bufferSize; //moves tail pointer, if 120 wraps!
+		bufferCount--;	//tick buffer count, decrease since we've reduced by 1 samp
 
-
+		int16_t decSamp = imuLaw(compSamp);	//decode encoded value
+		//I guess I could print the value here
+		Serial.println(decSamp);
+		//not certain how to send it to DAC yet
 	}	
 }
+
+void storePacket(uint8_t *data, int len) {
+    for (int i = 0; i < len; i++) {
+        if (bufferCount < BUFFER_SIZE) {  // Ensure buffer does not overflow
+            audioBuffer[bufferHead] = data[i];  // Store byte in buffer
+            bufferHead = (bufferHead + 1) % BUFFER_SIZE;  // Move head pointer (wraps around if needed)
+            bufferCount++;  // Increase stored byte count
+        }
+    }
+}
+
 /*
 Add decoding for 12 byte payload packages
 
