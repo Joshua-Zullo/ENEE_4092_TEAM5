@@ -16,8 +16,12 @@
 
 //----- END TEENSY CONFIG
 
-  //#define LED           14
+//define buffer other conss
 
+const int bufferSize = 120; //buffer 120 samples large. can increase if needed
+const int packetSize = 12;	// byte payload per packet
+
+IntervalTimer playbackTimer
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
@@ -53,6 +57,9 @@ void setup() {
   // No encryption
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
+
+	playbackTimer.begin(playAudio(), 125 )
+
   }
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
