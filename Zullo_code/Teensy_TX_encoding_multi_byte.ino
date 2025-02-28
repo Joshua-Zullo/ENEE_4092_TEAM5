@@ -21,12 +21,12 @@ const int micPin = 41; //analog input pin
 const unsigned long sampTime = 125;        //125 uS time segment
 unsigned long waitTime = 0;    //previous time segment
 
-/*  testing packets sent
+//  testing packets sent
 int countSamp = 0;
 int prevTime = 0;
-*/
-int8_t packetCount = 0; //stores packet number 1-4
-int8_t radiopacket[4]; //radio packet of uLaw PCM value
+
+int8_t packCoun = 0; //stores packet number 1-4
+int8_t radiopacket[12]; //radio packet of uLaw PCM value
 
 /************ Radio Setup ***************/
 
@@ -124,7 +124,7 @@ void setup() {
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
   // ishighpowermodule flag set like this:
-  rf69.setTxPower(14, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
+  rf69.setTxPower(12, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
 
   // The encryption key has to be the same as the one in the server
   uint8_t key[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -136,15 +136,12 @@ void setup() {
 //main body of code that runs continuously
 void loop() { 
 
-    
+    for(packCoun=0;packCoun<13;packCoun++){
     //timing loop. Only ends after 125uS
     waitTime += sampTime;   //set wait 125uS after itself
-
     while((micros()<waitTime)){
            //run while our time is less than 125uS from previous reading
     } //then run sampling normally
-
-
 
     int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
     Vin = normV(Vin); //Vin normalized
@@ -156,13 +153,9 @@ void loop() {
     //Serial.print(",");
 
 
-  // Send a message!
-  rf69.send((uint8_t *)radiopacket, sizeof(radiopacket));
-  rf69.waitPacketSent();
-
+    radiopacket[packCoun] = enPCM; //Send a message!
   //Serial.print("micros() - prevTime: ");
   //Serial.println(micros() - prevTime);
-  /*
   countSamp++;  //increase packets by 1
 
   if((micros()-prevTime)>=1000000){    //if time 1s or greater than prevTime
@@ -170,8 +163,9 @@ void loop() {
     Serial.println(countSamp);   
     countSamp = 0;    //reset count
     prevTime = micros();    //set new time
-
   }
-  */
-  
+
+    }
+      rf69.send((uint8_t *)radiopacket, sizeof(radiopacket));
+      rf69.waitPacketSent();
   }
