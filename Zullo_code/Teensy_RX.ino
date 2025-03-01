@@ -97,8 +97,6 @@ void setup() {
   // No encryption
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
-
-	playbackTimer.begin(playAudio,125); //start running the play audio function every 125 uS.
   }
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
@@ -111,6 +109,8 @@ void setup() {
   rf69.setEncryptionKey(key);
   
   Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
+  playbackTimer.begin(playAudio,125); //start running the play audio function every 125 uS.
+
 }
 
 
