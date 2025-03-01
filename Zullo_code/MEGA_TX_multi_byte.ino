@@ -76,15 +76,16 @@ void setup() {
 }
 
 void loop() {
-  
-    for(packCoun=0;packCoun<13;packCoun++){
+    delay(500);   //send packet every 1 s
+    for(packCoun=0;packCoun<12;packCoun++){
     //timing loop. Only ends after 125uS
     waitTime += sampTime;   //set wait 125uS after itself
       
     while((micros()<waitTime)){
            //run while our time is less than 125uS from previous reading
     } //then run sampling normally
-    radiopacket[packCoun] = dummPack[packCoun]; //Send a message!
+    radiopacket[packCoun] = dummyPack[packCoun]; //Send a message!
+    Serial.println(dummyPack[packCoun]);  //print the set integer being stored in packet
     }
       rf69.send((uint8_t *)radiopacket, sizeof(radiopacket));
       rf69.waitPacketSent();
