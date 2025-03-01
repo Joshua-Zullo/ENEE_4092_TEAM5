@@ -9,9 +9,9 @@
 //For Teensy 3.x and T4.x the following format is required to operate correctly
 //This is a limitation of the RadioHead radio drivers
 //either 30,31,32, or 8,7,6
-#define RFM69_RST     30 // RST to pin "x"
-#define RFM69_CS      31 // CS to pin "y"
-#define RFM69_INT     digitalPinToInterrupt(32)  //G0, hardware interupt
+#define RFM69_RST     8 // RST to pin "x"
+#define RFM69_CS      7 // CS to pin "y"
+#define RFM69_INT     digitalPinToInterrupt(6)  //G0, hardware interupt
 
 //----- END TEENSY CONFIG
 
@@ -23,16 +23,12 @@ volatile int8_t bufferHead = 0;	//head pointer for buffer
 volatile int8_t bufferTail = 0;  //  Tail pointer for circular buffer
 volatile int8_t bufferCount = 0;  // Number of bytes currently stored in buffer
 
-//declare mu, ceil_16
-
 const int mu = 255;	// steps mu-law, 2^8-1
 const int ceil_16 = 32768; //ceiling of 16 bit signed integer (2^15)
 
 IntervalTimer playbackTimer;	//create interrupt timer for playing audio samples
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
-
-int16_t packetnum = 0;  // packet counter, we increment per xmission
 
 //undo log scaling on 8 bit value, return to 16-bit PCM
 int16_t imuLaw(int8_t muVal){
