@@ -104,7 +104,7 @@ void setup() {
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
 
-	playbackTimer.begin(playAudio, 125 ) //start running the play audio function every 125 uS.
+	playbackTimer.begin(playAudio,125); //start running the play audio function every 125 uS.
   }
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
@@ -123,7 +123,7 @@ void loop() {
 	// Check if a new packet has been received from the radio module
     if (rf69.receiveDone()) {
         if (rf69.DATALEN == packetSize) {  // Ensure packet is the correct size
-            storePacket(radio.DATA, packetSize);  // Store received audio data in buffer. only for separate function
+            storePacket(rf69.DATA, packetSize);  // Store received audio data in buffer. only for separate function
         }
     }
 } 
