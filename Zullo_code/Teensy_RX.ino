@@ -27,6 +27,7 @@ const int mu = 255;	// steps mu-law, 2^8-1
 const int ceil_16 = 32768; //ceiling of 16 bit signed integer (2^15)
 
 IntervalTimer playbackTimer;	//create interrupt timer for playing audio samples
+
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
@@ -44,16 +45,13 @@ int16_t imuLaw(int8_t muVal){
 	
     return result;}
 
-
 void playAudio(){
 	if (bufferCount>0){ 		//only play if data stored
 		int8_t compSamp = audioBuffer[bufferTail];	//our uLaw sample is taken from the end of the buffer
 		bufferTail = (bufferTail+1) % bufferSize; //moves tail pointer, if 120 wraps!
-		bufferCount--;	//tick buffer count, decrease since we've reduced by 1 samp
-
+		bufferCount--;	//dec buffer count, reduced samples by 1
 		int16_t decSamp = imuLaw(compSamp);	//decode encoded value
-		//I guess I could print the value here
-		Serial.println(decSamp);
+		Serial.println(decSamp);	//print PCM value
 		//not certain how to send it to DAC yet
 	}	
 }
