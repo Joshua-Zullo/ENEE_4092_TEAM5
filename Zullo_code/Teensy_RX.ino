@@ -113,11 +113,22 @@ void setup() {
   Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
 }
 
+
 void loop() {
 	// Check if a new packet has been received from the radio module
-    if (rf69.receiveDone()) {
+  /*  if (rf69.receiveDone()) {
         if (rf69.DATALEN == packetSize) {  // Ensure packet is the correct size
             storePacket(rf69.DATA, packetSize);  // Store received audio data in buffer. only for separate function
         }
     }
+  */
+  if (rf69.available()) {
+        uint8_t buf[packetSize];
+        uint8_t len = sizeof(buf);
+        if (rf69.recv(buf, &len)) {
+            if (len == packetSize) {
+                storePacket(buf, len);
+            }
+        }
+    }  
 } 
