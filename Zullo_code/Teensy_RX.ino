@@ -1,4 +1,3 @@
-
 #include <SPI.h>
 #include <RH_RF69.h>
 
@@ -16,12 +15,63 @@
 
 //----- END TEENSY CONFIG
 
-  //#define LED           14
+const int bufferSize = 120; //buffer 120 samples large. can increase if needed
+const int packetSize = 12;	// byte payload per packet
 
+volatile int8_t audioBuffer[bufferSize];	//buffer array which stores samples
+volatile int8_t bufferHead = 0;	//head pointer for buffer
+volatile int8_t bufferTail = 0;  //  Tail pointer for circular buffer
+volatile int8_t bufferCount = 0;  // Number of bytes currently stored in buffer
+
+//declare mu, ceil_16
+
+const int mu = 255;	// steps mu-law, 2^8-1
+const ceil_16 = 32768; //ceiling of 16 bit signed integer (2^15)
+
+IntervalTimer playbackTimer	//create interrupt timer for playing audio samples
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
 int16_t packetnum = 0;  // packet counter, we increment per xmission
+
+//undo log scaling on 8 bit value, return to 16-bit PCM
+int16_t imuLaw(int8_t muVal){
+    int sign = 1; //store sign 
+     if (muVal <0){    // is muVal<0? 
+        sign = -1;	//store sign
+        muVal = muVal*sign; } //take ABS(muVal)
+    
+    float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
+    float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
+    imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
+    int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
+	
+    return result;}
+
+
+void playAudio(){
+	if (bufferCount>0){ 		//only play if data stored
+		int8_t compSamp = audioBuffer[bufferTail];	//our uLaw sample is taken from the end of the buffer
+		bufferTail = (bufferTail+1) % bufferSize; //moves tail pointer, if 120 wraps!
+		bufferCount--;	//tick buffer count, decrease since we've reduced by 1 samp
+
+		int16_t decSamp = imuLaw(compSamp);	//decode encoded value
+		//I guess I could print the value here
+		Serial.println(decSamp);
+		//not certain how to send it to DAC yet
+	}	
+}
+
+void storePacket(uint8_t *data, int len) {
+    for (int i = 0; i < len; i++) {
+        if (bufferCount < BUFFER_SIZE) {  // Ensure buffer does not overflow
+            audioBuffer[bufferHead] = data[i];  // Store byte in buffer
+            bufferHead = (bufferHead + 1) % BUFFER_SIZE;  // Move head pointer (wraps around if needed)
+            bufferCount++;  // Increase stored byte count
+        }
+    }
+}
+
 
 void setup() {
   Serial.begin(115200);
@@ -53,6 +103,8 @@ void setup() {
   // No encryption
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
+
+	playbackTimer.begin(playAudio(), 125 ) //start running the play audio function every 125 uS.
   }
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
@@ -68,88 +120,10 @@ void setup() {
 }
 
 void loop() {
- if (rf69.available()) {
-    uint8_t buf[RH_RF69_MAX_MESSAGE_LEN];  // Buffer for incoming data
-    uint8_t len = sizeof(buf);
-
-    if (rf69.recv(buf, &len)) {  // Attempt to receive
-        if (len > 0) {
-            int8_t receivedValue = (int8_t)buf[0];  // Convert received byte to signed int8_t
-
-            Serial.print("Received Value: ");
-            Serial.println(receivedValue);  // Print as integer
-
-            Serial.print("RSSI: ");
-            Serial.println(rf69.lastRssi(), DEC);
+	// Check if a new packet has been received from the radio module
+    if (radio.receiveDone()) {
+        if (radio.DATALEN == packetSize) {  // Ensure packet is the correct size
+            storePacket(radio.DATA, packet_Size);  // Store received audio data in buffer. only for separate function
         }
-    } else {
-        Serial.println("Receive failed");
-    } 
-  } else{ Serial.println("Nuffin here"); }
-
-  delay(10); //prevent "serial flooding???"
+    }
 } 
-
-void Blink(byte PIN, byte DELAY_MS, byte loops) {
-  for (byte i=0; i<loops; i++)  {
-    digitalWrite(PIN,HIGH);
-    delay(DELAY_MS);
-    digitalWrite(PIN,LOW);
-    delay(DELAY_MS);
-  }
-}
-
-
-
-/*
-Add decoding for 12 byte payload packages
-
--receive package
--store as array
-
-have for iteratively pullout each component and play them
-
--receive next package etc...
-
-
-we need it to play faster than it receives the next package?
-
-*/
-
-/* 
-
-PSEUDO CODE
-
--create buffer with variabled for storing head and tail position
-
-play audio loop every 125uS!!
-
-main loop {
-	if done receiving
-		if data is right size, 
-			store data (function!)
-}
-
-store data 
-
-		for loop iteratively stores
-
-		head pointer for buffer changes…
-			byte count ticks
-
-
-
-
-play audio function{
-
-		if we have data in buffer
-			store data from buffer array (end data)
-			change tail index
-			decrease count
-			
-			decode uLAw
-		play decoded value (or just print it)
-
-
-}
-*/
