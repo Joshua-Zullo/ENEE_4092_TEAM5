@@ -26,9 +26,9 @@ volatile int8_t bufferCount = 0;  // Number of bytes currently stored in buffer
 //declare mu, ceil_16
 
 const int mu = 255;	// steps mu-law, 2^8-1
-const ceil_16 = 32768; //ceiling of 16 bit signed integer (2^15)
+const int ceil_16 = 32768; //ceiling of 16 bit signed integer (2^15)
 
-IntervalTimer playbackTimer	//create interrupt timer for playing audio samples
+IntervalTimer playbackTimer;	//create interrupt timer for playing audio samples
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
@@ -64,9 +64,9 @@ void playAudio(){
 
 void storePacket(uint8_t *data, int len) {
     for (int i = 0; i < len; i++) {
-        if (bufferCount < BUFFER_SIZE) {  // Ensure buffer does not overflow
+        if (bufferCount < bufferSize) {  // Ensure buffer does not overflow
             audioBuffer[bufferHead] = data[i];  // Store byte in buffer
-            bufferHead = (bufferHead + 1) % BUFFER_SIZE;  // Move head pointer (wraps around if needed)
+            bufferHead = (bufferHead + 1) % bufferSize;  // Move head pointer (wraps around if needed)
             bufferCount++;  // Increase stored byte count
         }
     }
@@ -104,7 +104,7 @@ void setup() {
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
 
-	playbackTimer.begin(playAudio(), 125 ) //start running the play audio function every 125 uS.
+	playbackTimer.begin(playAudio, 125 ) //start running the play audio function every 125 uS.
   }
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
@@ -121,9 +121,9 @@ void setup() {
 
 void loop() {
 	// Check if a new packet has been received from the radio module
-    if (radio.receiveDone()) {
-        if (radio.DATALEN == packetSize) {  // Ensure packet is the correct size
-            storePacket(radio.DATA, packet_Size);  // Store received audio data in buffer. only for separate function
+    if (rf69.receiveDone()) {
+        if (rf69.DATALEN == packetSize) {  // Ensure packet is the correct size
+            storePacket(radio.DATA, packetSize);  // Store received audio data in buffer. only for separate function
         }
     }
 } 
