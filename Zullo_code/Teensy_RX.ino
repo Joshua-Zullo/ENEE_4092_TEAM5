@@ -41,6 +41,7 @@ int16_t imuLaw(int8_t muVal){
     float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
     float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
     imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
+    
     int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
 	
     return result;}
@@ -51,7 +52,7 @@ void playAudio(){
 		bufferTail = (bufferTail+1) % bufferSize; //moves tail pointer, if 120 wraps!
 		bufferCount--;	//dec buffer count, reduced samples by 1
 		int16_t decSamp = imuLaw(compSamp);	//decode encoded value
-		Serial.println(decSamp);	//print PCM value
+		//Serial.println(decSamp);	//print PCM value
 		//not certain how to send it to DAC yet
 	}	
 }
@@ -97,6 +98,7 @@ void setup() {
   // No encryption
   if (!rf69.setFrequency(RF69_FREQ)) {
     Serial.println("setFrequency failed");
+
   }
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
@@ -109,19 +111,14 @@ void setup() {
   rf69.setEncryptionKey(key);
   
   Serial.print("RFM69 radio @");  Serial.print((int)RF69_FREQ);  Serial.println(" MHz");
-  playbackTimer.begin(playAudio,125); //start running the play audio function every 125 uS.
 
+  playbackTimer.begin(playAudio,125); 	 //start running the play audio function every 125 uS.
+  Serial.println("Timer should begin!");
 }
 
 
 void loop() {
 	// Check if a new packet has been received from the radio module
-  /*  if (rf69.receiveDone()) {
-        if (rf69.DATALEN == packetSize) {  // Ensure packet is the correct size
-            storePacket(rf69.DATA, packetSize);  // Store received audio data in buffer. only for separate function
-        }
-    }
-  */
   if (rf69.available()) {
         uint8_t buf[packetSize];
         uint8_t len = sizeof(buf);
@@ -130,5 +127,5 @@ void loop() {
                 storePacket(buf, len);
             }
         }
-    }  
+    } //else {Serial.println("We aint getting jack");}  
 } 
