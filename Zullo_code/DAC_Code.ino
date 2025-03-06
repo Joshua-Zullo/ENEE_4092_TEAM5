@@ -22,8 +22,6 @@ void setup() {
 }
 
 void loop() {
-  int micReading = analogRead(A2);  // Read raw mic data
-  Serial.println(micReading);  // Check if there's any input signal
-  delay(100);
+  //Libraries handle the fun stuff.
 }
 
