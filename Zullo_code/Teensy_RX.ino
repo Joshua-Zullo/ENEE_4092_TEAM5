@@ -9,9 +9,9 @@
 //For Teensy 3.x and T4.x the following format is required to operate correctly
 //This is a limitation of the RadioHead radio drivers
 //either 30,31,32, or 8,7,6
-#define RFM69_RST     8 // RST to pin "x"
-#define RFM69_CS      7 // CS to pin "y"
-#define RFM69_INT     digitalPinToInterrupt(6)  //G0, hardware interupt
+#define RFM69_RST     32 // RST to pin "x"
+#define RFM69_CS      31 // CS to pin "y"
+#define RFM69_INT     digitalPinToInterrupt(30)  //G0, hardware interupt
 
 //----- END TEENSY CONFIG
 
@@ -52,7 +52,7 @@ void playAudio(){
 		bufferTail = (bufferTail+1) % bufferSize; //moves tail pointer, if 120 wraps!
 		bufferCount--;	//dec buffer count, reduced samples by 1
 		int16_t decSamp = imuLaw(compSamp);	//decode encoded value
-		//Serial.println(decSamp);	//print PCM value
+		Serial.println(decSamp);	//print PCM value
 		//not certain how to send it to DAC yet
 	}	
 }
