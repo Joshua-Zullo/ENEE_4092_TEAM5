@@ -37,9 +37,9 @@ const int8_t dummyPack[12] = {-128, -107, -86, -65, -44, -23, -2, 19, 40, 61, 82
 //For Teensy 3.x and T4.x the following format is required to operate correctly
 //This is a limitation of the RadioHead radio drivers
 
-#define RFM69_RST     8 // RST to pin "x" (maybe 8)
+#define RFM69_RST     6 // RST to pin "x" (maybe 8)
 #define RFM69_CS      7 // CS to pin "y"  (maybe 7)
-#define RFM69_INT     digitalPinToInterrupt(6)  //G0, hardware interupt (maybe 6)
+#define RFM69_INT     digitalPinToInterrupt(8)  //G0, hardware interupt (maybe 6)
 
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS,RFM69_INT);
