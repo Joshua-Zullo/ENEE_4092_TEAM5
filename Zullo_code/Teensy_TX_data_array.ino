@@ -27,6 +27,7 @@ int prevTime = 0;
 
 int8_t packCoun = 0; //stores packet number 1-4
 int8_t radiopacket[12]; //radio packet of uLaw PCM value
+const int8_t dummyPack[12] = {-128, -107, -86, -65, -44, -23, -2, 19, 40, 61, 82, 103};  //transmission bytes
 
 /************ Radio Setup ***************/
 
@@ -124,7 +125,7 @@ void setup() {
 
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
   // ishighpowermodule flag set like this:
-  rf69.setTxPower(12, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
+  rf69.setTxPower(14, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
 
   // The encryption key has to be the same as the one in the server
   uint8_t key[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -143,6 +144,8 @@ void loop() {
            //run while our time is less than 125uS from previous reading
     } //then run sampling normally
 
+
+        
     int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
     Vin = normV(Vin); //Vin normalized
     //Serial.print(Vin); //print norm Vin
@@ -166,10 +169,6 @@ void loop() {
   }
 
     }
-      rf69.send((uint8_t *)radiopacket, sizeof(radiopacket));
-      rf69.waitPacketSent();
-  }
-
 
 
 //previous MEGA TX code
@@ -205,7 +204,7 @@ void loop() {
 
 int8_t packCoun = 0; //stores packet number 1-12
 int8_t radiopacket[12]; //radio packet of uLaw PCM value
-const int8_t dummyPack[12] = {-128, -107, -86, -65, -44, -23, -2, 19, 40, 61, 82, 103};  //transmission bytes
+
 const unsigned long sampTime = 125;        //125 uS time segment
 unsigned long waitTime = 0;    //previous time segment
 
