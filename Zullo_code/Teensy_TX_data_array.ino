@@ -18,7 +18,7 @@ const int ceil_16 = 32768; //ceiling of 16 bit integer value (Absolute value)
 const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 const int micPin = 41; //analog input pin
 
-const unsigned long sampTime = 125;        //125 uS time segment
+const unsigned long sampTime = 125;        //125 uS time segment . can change to 126 to udersample
 unsigned long waitTime = 0;    //previous time segment
 
 //  testing packets sent
