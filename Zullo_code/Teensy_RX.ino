@@ -104,6 +104,8 @@ void setup() {
   // If you are using a high power RF69 eg RFM69HW, you *must* set a Tx power with the
   // ishighpowermodule flag set like this:
   rf69.setTxPower(14, true);  // range from 14-20 for power, 2nd arg must be true for 69HCW
+  rf69.spiWrite(0x18, 0x88);  // Manually set RX gain to max
+  rf69.spiWrite(0x29, 0x64);  //threshold for receiving a valid signal (in hex). 
 
   // The encryption key has to be the same as the one in the server
   uint8_t key[] = { 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
