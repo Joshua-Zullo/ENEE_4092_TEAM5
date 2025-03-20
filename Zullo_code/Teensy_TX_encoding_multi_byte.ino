@@ -1,7 +1,3 @@
-// It is designed to work with the other example rf69_server.
-// Demonstrates the use of AES encryption, setting the frequency and modem 
-// configuration
-
 //consider disabling the serial.print for actual proper testing
 //check the packet overhead as we only transmit 1 byte per packet
 
@@ -36,9 +32,9 @@ int8_t radiopacket[12]; //radio packet of uLaw PCM value
 //For Teensy 3.x and T4.x the following format is required to operate correctly
 //This is a limitation of the RadioHead radio drivers
 
-#define RFM69_RST     8 // RST to pin "x" (maybe 8)
+#define RFM69_RST     6 // RST to pin "x" (maybe 8)
 #define RFM69_CS      7 // CS to pin "y"  (maybe 7)
-#define RFM69_INT     digitalPinToInterrupt(6)  //G0, hardware interupt (maybe 6)
+#define RFM69_INT     digitalPinToInterrupt(8)  //G0, hardware interupt (maybe 6)
 
 // Singleton instance of the radio driver
 RH_RF69 rf69(RFM69_CS,RFM69_INT);
@@ -145,7 +141,7 @@ void loop() {
 
     int16_t Vin = analogRead(micPin);    //read Vin as 16 bit PCM value
     Vin = normV(Vin); //Vin normalized
-    //Serial.print(Vin); //print norm Vin
+    Serial.println(Vin); //print norm Vin
     //Serial.print(",");
 
     int8_t enPCM = muLaw(Vin);    // 8 bit int enPCM which equal to log PCM value
@@ -159,8 +155,8 @@ void loop() {
   countSamp++;  //increase packets by 1
 
   if((micros()-prevTime)>=1000000){    //if time 1s or greater than prevTime
-    Serial.print("Samples/sec is: ");
-    Serial.println(countSamp);   
+    //Serial.print("Samples/sec is: ");
+    //Serial.println(countSamp);   
     countSamp = 0;    //reset count
     prevTime = micros();    //set new time
   }
