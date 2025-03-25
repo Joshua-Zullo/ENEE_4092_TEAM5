@@ -1,9 +1,5 @@
-// It is designed to work with the other example rf69_server.
-// Demonstrates the use of AES encryption, setting the frequency and modem 
-// configuration
-
-//consider disabling the serial.print for actual proper testing
-//check the packet overhead as we only transmit 1 byte per packet
+//Multibyte but with preset data array. We are not reading the MIC
+// Zullo
 
 # include <SPI.h>
 # include <RH_RF69.h>
