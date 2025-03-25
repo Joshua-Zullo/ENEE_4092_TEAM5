@@ -45,7 +45,9 @@ void setup() {
     audioShield.volume(0.6);
 
     // Configure Low-Pass Filter
-    biquad1.setLowpass(0, 3000, 0.7);  // Cut frequencies above 3kHz
+    biquad1.setLowpass(0, 3500, 0.7);  // Cut frequencies above 3.5 kHz
+
+    
 
     pinMode(RFM69_RST, OUTPUT);
     digitalWrite(RFM69_RST, LOW);
