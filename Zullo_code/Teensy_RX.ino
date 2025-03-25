@@ -1,3 +1,5 @@
+//Test if teensy + XCVR can playback our transmitted data
+
 #include <SPI.h>
 #include <RH_RF69.h>
 
