@@ -4,15 +4,8 @@
 # include <math.h>  //math library
 # include <stdint.h>    //includes special data types,ex: int8_t
 
-// rf69 demo tx rx.pde
-// -*- mode: C++ -*-
-// Example sketch showing how to create a simple messaging client
-// with the RH_RF69 class. RH_RF69 class does not provide for addressing
-// or reliability, so you should only use RH_RF69 if you do not need the
-// higher level messaging abilities.
-// It is designed to work with the other example RadioHead69_RawDemo_RX.
-// Demonstrates the use of AES encryption, setting the frequency and
-// modem configuration.
+// send a data array using the arduino mega + XCVR
+// useful if don't have a spare teensy
 
 /************ Radio Setup ***************/
 
