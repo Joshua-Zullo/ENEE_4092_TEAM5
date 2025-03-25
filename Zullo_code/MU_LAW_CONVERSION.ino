@@ -1,3 +1,6 @@
+// prove that we can encode and decode our MIC read values
+
+
 
 # include <math.h>  //math library
 # include <stdint.h>    //includes special data types,ex: int8_t
