@@ -1,5 +1,5 @@
-//consider disabling the serial.print for actual proper testing
-//check the packet overhead as we only transmit 1 byte per packet
+//Zullo code for transmitting 12 byte packets
+
 
 # include <SPI.h>
 # include <RH_RF69.h>
