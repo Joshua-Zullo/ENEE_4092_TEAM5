@@ -1,109 +1,96 @@
-#include <SPI.h>         // SPI library for communication with the RFM69 transceiver
-#include <RH_RF69.h>     // RadioHead library to interface with the RFM69 module
-#include <Audio.h>       // Teensy Audio library for handling audio input and processing
+// Include necessary libraries for communication and audio processing
+#include <SPI.h>         // SPI library for RFM69 communication
+#include <RH_RF69.h>     // RadioHead library for RFM69 module
+#include <Audio.h>       // Teensy Audio library for handling audio
 
-// Define RFM69 radio settings
-#define RF69_FREQ 433.0  // Radio frequency set to 433 MHz (can be changed based on region)
-#define RFM69_CS  10     // Chip Select (CS) pin for RFM69 module
-#define RFM69_INT 8      // Interrupt pin for RFM69 module
-#define RFM69_RST 6      // Reset pin for RFM69 module
+//Need to dycrypt the sending information
 
-const int packetSize = 12;  // Define the size of the data packet to be transmitted
+// Define RFM69 transceiver settings
+#define RF69_FREQ 433.0  // Operating frequency of 433 MHz
+#define RFM69_CS  10     // Chip Select pin
+#define RFM69_INT 8      // Interrupt pin
+#define RFM69_RST 6      // Reset pin
 
-// Create an RFM69 radio object using the defined chip select and interrupt pins
+const int packetSize = 12;  // Size of audio data packets
+
+// Create RFM69 radio object
 RH_RF69 rf69(RFM69_CS, RFM69_INT);
 
 // Teensy Audio Objects
-AudioInputAnalog         audioInput(A17);  // Define the analog audio input on pin A17
-AudioRecordQueue         queue1;           // Queue to store recorded audio samples
-AudioFilterBiquad        biquad1;          // Biquad filter for audio signal processing
-AudioConnection          patchCord1(audioInput, biquad1); // Connect audio input to biquad filter
-AudioConnection          patchCord2(biquad1, queue1);     // Connect biquad filter to audio queue
+AudioInputAnalog         audioInput(A17);  // Analog audio input from electret microphone
+AudioRecordQueue         queue1;           // Queue for storing recorded audio samples
+AudioFilterBiquad        biquad1;          // Biquad filter for noise reduction
+AudioConnection          patchCord1(audioInput, biquad1); // Connect input to filter
+AudioConnection          patchCord2(biquad1, queue1);     // Connect filter to queue
 
 void setup() {
-    Serial.begin(115200);  // Start serial communication at 115200 baud
-    while (!Serial);       // Wait for the serial monitor to be ready
+    Serial.begin(115200);  // Initialize serial communication
+    while (!Serial);       // Wait for serial monitor to be ready
 
-    // Reset the RFM69 module
-    pinMode(RFM69_RST, OUTPUT);   // Set the reset pin as an OUTPUT
-    digitalWrite(RFM69_RST, LOW); // Set reset pin LOW
-    digitalWrite(RFM69_RST, HIGH); // Set reset pin HIGH to trigger reset
-    delay(10);                     // Wait 10 ms
-    digitalWrite(RFM69_RST, LOW);  // Set reset pin LOW again to complete reset
-    delay(10);                     // Wait another 10 ms
+    // Reset RFM69 module
+    pinMode(RFM69_RST, OUTPUT);
+    digitalWrite(RFM69_RST, LOW);
+    digitalWrite(RFM69_RST, HIGH);
+    delay(10);
+    digitalWrite(RFM69_RST, LOW);
+    delay(10);
 
-    // Initialize the RFM69 radio module
+    // Initialize RFM69 module
     if (!rf69.init()) {
-        Serial.println("RFM69 radio init failed"); // Print an error message if initialization fails
-        while (1); // Halt execution if the radio module is not detected
+        Serial.println("RFM69 radio init failed");
+        while (1);
     }
     
-    rf69.setFrequency(RF69_FREQ); // Set the RFM69 frequency to 433 MHz
-    rf69.setTxPower(20, true);    // Set the transmission power to 20 dBm (max power)
-    rf69.setModemConfig(RH_RF69::GFSK_Rb250Fd250); // Configure the radio modulation settings
-    rf69.setSyncWords((uint8_t*)"SYNC", 4); // Set the synchronization word to "SYNC" (4 bytes)
+    rf69.setFrequency(RF69_FREQ); // Set radio frequency
+    rf69.setTxPower(20, true);    // Set transmission power to max
+    rf69.setModemConfig(RH_RF69::GFSK_Rb250Fd250); // Set modem configuration
+    rf69.setSyncWords((uint8_t*)"SYNC", 4); // Set sync word for communication
 
-    AudioMemory(20);                // Allocate memory for audio processing (20 blocks)
-    queue1.begin();                 // Start recording audio into the queue
-    biquad1.setLowpass(0, 5000, 0.7); // Configure the biquad filter as a low-pass filter (5 kHz cutoff)
+    AudioMemory(20);                // Allocate memory for audio processing
+    queue1.begin();                 // Start recording
+    biquad1.setLowpass(0, 4000, 0.7); // Apply low-pass filter for noise reduction
 }
 
-// μ-Law Encoding Function
+// μ-Law Encoding Function for compression
 uint8_t muLawEncode(int16_t sample) {
-    int sign = (sample >> 8) & 0x80; // Extract the sign bit (positive/negative indicator)
-    if (sign) sample = -sample;      // Convert negative values to positive
-    if (sample > 32635) sample = 32635; // Limit the sample to prevent overflow
+    int sign = (sample >> 8) & 0x80;
+    if (sign) sample = -sample;
+    if (sample > 32635) sample = 32635;
     
-    // Find the exponent and mantissa for μ-Law encoding
     int exponent = 7, mantissa = (sample >> 4) & 0x0F;
     for (int mask = 0x4000; (sample & mask) == 0 && exponent > 0; mask >>= 1, exponent--);
     
-    // Combine the sign, exponent, and mantissa to create the μ-Law encoded byte
     uint8_t ulaw = ~(sign | (exponent << 4) | mantissa);
-    return ulaw; // Return the encoded byte
+    return ulaw;
 }
 
 void loop() {
-    // Check if there is recorded audio available in the queue
+    // Read and print the microphone voltage level
+    float readValue1 = analogRead(A17);
+    float voltage1 = (readValue1 * (5.0 / 1023.0)) * 1000;
+    Serial.println(voltage1);
 
-     float readValue1 = analogRead(A17);
-
-  float voltage1 = (readValue1 * (5.0 / 1023.0))* 1000; // Convert ADC value to mV
-
-
-  // Print voltage1 for Serial Plotter
-  Serial.println(voltage1);
-
+    // Process audio data when available
     if (queue1.available()) {  
-        uint8_t buffer[packetSize];  // Create a buffer to store encoded audio samples
+        uint8_t buffer[packetSize];  // Buffer to store processed audio data
+        int16_t *samples = queue1.readBuffer(); // Get audio samples from queue
 
-        int16_t *samples = queue1.readBuffer(); // Read raw audio samples from the queue
-        if (samples) { // If samples are available
-            for (int i = 0; i < packetSize; i++) { // Process each sample
-                buffer[i] = muLawEncode(samples[i]); // Encode the sample using μ-Law compression
+        if (samples) { 
+            for (int i = 0; i < packetSize; i++) {
+                buffer[i] = muLawEncode(samples[i]); // Encode samples using μ-Law
             }
-
-            queue1.freeBuffer(); // Free the buffer in the audio queue after processing
-
-            rf69.send(buffer, packetSize);  // Transmit the encoded data packet via RFM69
-            rf69.waitPacketSent();          // Wait until the packet is fully transmitted
-
-            // Debugging: Print the sent packet in hexadecimal format
+            
+            queue1.freeBuffer(); // Free memory after processing
+            rf69.send(buffer, packetSize);  // Send data packet via RFM69
+            rf69.waitPacketSent();          // Ensure packet is fully transmitted
+            
+            // Debugging: Print sent packet data
             Serial.print("Sent Packet: ");
             for (int i = 0; i < packetSize; i++) {
-                Serial.print(buffer[i], HEX); // Print each byte as a hexadecimal number
-                Serial.print(" "); // Add a space between bytes
+                Serial.print(buffer[i], HEX);
+                Serial.print(" ");
             }
-            Serial.println(); // Move to the next line after printing the packet
-
-            float readValue1 = analogRead(A17);
-
-  float voltage1 = (readValue1 * (5.0 / 1023.0))* 1000; // Convert ADC value to mV
-
-
-  // Print voltage1 for Serial Plotter
-  Serial.println(voltage1);
+            Serial.println();
         }
     }
 }
-
