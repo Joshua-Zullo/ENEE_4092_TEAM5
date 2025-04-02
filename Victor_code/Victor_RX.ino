@@ -2,6 +2,14 @@
 #include <RH_RF69.h>   // Include RadioHead library for controlling the RFM69 transceiver
 #include <Audio.h>     // Include Teensy Audio library for handling audio processing
 
+// Change the voltage to the DAC output to mathc the 2VPP
+
+//Change the receiving code from square wave to sine wave to try to rid of noise
+AudioFilterBiquad lowpass;
+//AudioFilterBiquad highpass;
+
+
+
 // Define the RFM69 radio settings
 #define RF69_FREQ 433.0  // Set the frequency of the radio to 433 MHz
 #define RFM69_CS  36     // Define the Chip Select (CS) pin for the RFM69 module
@@ -17,18 +25,22 @@ RH_RF69 rf69(RFM69_CS, RFM69_INT);
 AudioControlSGTL5000 audioShield;  // Create an object for controlling the SGTL5000 audio codec
 AudioPlayQueue queue1;             // Create an audio queue for playback
 AudioOutputI2S i2s1;               // Define I2S audio output
-AudioConnection patchCord1(queue1, i2s1); // Connect the audio queue to the I2S output
+//AudioConnection patchCord1(queue1, i2s1); // Connect the audio queue to the I2S output
+AudioConnection patchCord1(queue1, lowpass);
+//AudioConnection patchCord2(queue1, highpass);
+AudioConnection patchCord2(lowpass, i2s1);
 
 void setup() {
-    Serial.begin(115200);  // Start serial communication at 115200 baud
+    Serial.begin(200000);  // Start serial communication at 115200 baud
     while (!Serial);       // Wait for the serial monitor to be ready
 
     // Initialize the Audio Shield
     audioShield.enable();            // Enable the audio shield
     audioShield.volume(1.0);         // Set maximum volume (1.0 = 100%)
-    audioShield.unmuteHeadphone();   // Unmute the headphone output
+    audioShield.unmuteHeadphone();   // Unmute the headphone output {Code for left or right}
     audioShield.unmuteLineout();     // Unmute the line-out output
-    audioShield.lineOutLevel(31);    // Set the maximum line-out level
+    audioShield.lineOutLevel(13);    // Set the maximum line-out level {Adjust for the output voltage of 3.5}
+
 
     // Initialize the RFM69 transceiver
     pinMode(RFM69_RST, OUTPUT);  // Set the reset pin as an OUTPUT
@@ -37,6 +49,9 @@ void setup() {
     delay(10);                     // Wait 10 ms for reset
     digitalWrite(RFM69_RST, LOW);  // Set reset pin LOW again to complete reset
     delay(10);                     // Wait another 10 ms
+
+    lowpass.setLowpass(0, 3000, 0.707);  // 4kHz cutoff, Q = 0.707 (Butterworth response)
+    //highpass.setHighpass(0, 250, 0.707);
 
     // Check if the RFM69 module initializes successfully
     if (!rf69.init()) {
@@ -62,7 +77,7 @@ int16_t muLawDecode(uint8_t ulaw) {
     int sign = (ulaw & 0x80) ? -1 : 1;  // Determine the sign (positive or negative)
     int exponent = (ulaw >> 4) & 0x07;  // Extract the exponent part
     int mantissa = ulaw & 0x0F;         // Extract the mantissa part
-    int sample = (((mantissa << 3) + 0x84) << exponent) - MULAW_BIAS; // Decode the μ-Law byte into a 16-bit PCM sample
+    int sample = (((mantissa << 4) + 0x84) << exponent) - MULAW_BIAS; // Decode the μ-Law byte into a 16-bit PCM sample
     
     return sign * sample;  // Return the decoded sample with the correct sign
 }
@@ -96,21 +111,5 @@ void loop() {
             }
         }
     }
-}
-
-int signalPin1 = A0; // Pin where the first signal is connected
-
-void setup() {
-  Serial.begin(2000000); // Increased baud rate for faster data transmission
-}
-
-void loop() {
-  float readValue1 = analogRead(signalPin1);
-
-  float voltage1 = (readValue1 * (5.0 / 1023.0))* 1000; // Convert ADC value to mV
-
-
-  // Print voltage1 for Serial Plotter
-  Serial.println(voltage1);
 }
 
