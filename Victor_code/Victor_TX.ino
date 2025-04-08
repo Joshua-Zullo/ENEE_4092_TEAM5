@@ -10,6 +10,9 @@
 #define RF69_RST  6          // Reset pin for RFM69
 
 const int packetSize = 16;   // Number of audio samples per packet
+
+// default packet size 16, with 4 packets total in header and footer. Thus, our payload is only 12 bytes. 16 would only work if you changed the default value
+
 const int ceil_16 = 32768;   // Maximum absolute value for 16-bit signed integers
 const int mu = 255;          // μ-law encoding parameter (common standard value)
 
@@ -62,7 +65,7 @@ int8_t muLawEncode(int16_t sample) {
 
     return (int8_t)(muLawVal * 127) * sign; // Scale to -127 to +127 range
 }
-
+//I don't see any sampling modification, probably still sampling at 44.1kHz.
 void loop() {
     // If audio data is available in the queue
     if (queue1.available() > 0) {
