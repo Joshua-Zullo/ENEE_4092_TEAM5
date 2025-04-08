@@ -8,7 +8,7 @@
 #define RF69_INT  31         // Interrupt pin for RFM69
 #define RF69_RST  32         // Reset pin for RFM69
 
-const int packetSize = 16;   // Number of audio samples per packet
+const int packetSize = 12;   // Number of audio samples per packet
 const int ceil_16 = 32768;   // Max absolute value of 16-bit signed audio
 const int mu = 255;          // μ-law encoding factor
 
