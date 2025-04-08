@@ -1,96 +1,86 @@
-// Include necessary libraries for communication and audio processing
-#include <SPI.h>         // SPI library for RFM69 communication
-#include <RH_RF69.h>     // RadioHead library for RFM69 module
-#include <Audio.h>       // Teensy Audio library for handling audio
-
-//Need to dycrypt the sending information
+#include <SPI.h>
+#include <RH_RF69.h>
+#include <Audio.h>
+#include <math.h>
 
 // Define RFM69 transceiver settings
-#define RF69_FREQ 433.0  // Operating frequency of 433 MHz
-#define RFM69_CS  10     // Chip Select pin
-#define RFM69_INT 8      // Interrupt pin
-#define RFM69_RST 6      // Reset pin
+#define RF69_FREQ 433.0  
+#define RFM69_CS  10    
+#define RF69_INT  8     
+#define RF69_RST  6     
 
-const int packetSize = 12;  // Size of audio data packets
+const int packetSize = 16; 
+const int ceil_16 = 32768;
+const int mu = 255;
 
-// Create RFM69 radio object
-RH_RF69 rf69(RFM69_CS, RFM69_INT);
+RH_RF69 rf69(RFM69_CS, RF69_INT);
 
 // Teensy Audio Objects
-AudioInputAnalog         audioInput(A17);  // Analog audio input from electret microphone
-AudioRecordQueue         queue1;           // Queue for storing recorded audio samples
-AudioFilterBiquad        biquad1;          // Biquad filter for noise reduction
-AudioConnection          patchCord1(audioInput, biquad1); // Connect input to filter
-AudioConnection          patchCord2(biquad1, queue1);     // Connect filter to queue
+AudioInputAnalog audioInput(A17);  
+AudioRecordQueue queue1;          
+AudioFilterBiquad biquad1;         
+AudioConnection patchCord1(audioInput, biquad1);
+AudioConnection patchCord2(biquad1, queue1);
 
 void setup() {
-    Serial.begin(115200);  // Initialize serial communication
-    while (!Serial);       // Wait for serial monitor to be ready
+    Serial.begin(115200);
+    while (!Serial);
 
-    // Reset RFM69 module
-    pinMode(RFM69_RST, OUTPUT);
-    digitalWrite(RFM69_RST, LOW);
-    digitalWrite(RFM69_RST, HIGH);
+    pinMode(RF69_RST, OUTPUT);
+    digitalWrite(RF69_RST, LOW);
+    digitalWrite(RF69_RST, HIGH);
     delay(10);
-    digitalWrite(RFM69_RST, LOW);
+    digitalWrite(RF69_RST, LOW);
     delay(10);
 
-    // Initialize RFM69 module
     if (!rf69.init()) {
         Serial.println("RFM69 radio init failed");
         while (1);
     }
-    
-    rf69.setFrequency(RF69_FREQ); // Set radio frequency
-    rf69.setTxPower(20, true);    // Set transmission power to max
-    rf69.setModemConfig(RH_RF69::GFSK_Rb250Fd250); // Set modem configuration
-    rf69.setSyncWords((uint8_t*)"SYNC", 4); // Set sync word for communication
 
-    AudioMemory(20);                // Allocate memory for audio processing
-    queue1.begin();                 // Start recording
-    biquad1.setLowpass(0, 4000, 0.7); // Apply low-pass filter for noise reduction
+    rf69.setFrequency(RF69_FREQ);
+    rf69.setTxPower(20, true);
+    rf69.setSyncWords((uint8_t*)"SYNC", 4);
+
+    AudioMemory(100);
+    queue1.begin();
+
+    // Improved low-pass filtering
+    biquad1.setLowpass(0, 3000, 0.707);
+    biquad1.setLowpass(1, 3000, 0.707);
 }
 
-// μ-Law Encoding Function for compression
-uint8_t muLawEncode(int16_t sample) {
-    int sign = (sample >> 8) & 0x80;
-    if (sign) sample = -sample;
-    if (sample > 32635) sample = 32635;
+// μ-Law Encoding (Logarithmic)
+int8_t muLawEncode(int16_t sample) {
+    int sign = (sample < 0) ? -1 : 1;
+    sample = abs(sample);
     
-    int exponent = 7, mantissa = (sample >> 4) & 0x0F;
-    for (int mask = 0x4000; (sample & mask) == 0 && exponent > 0; mask >>= 1, exponent--);
-    
-    uint8_t ulaw = ~(sign | (exponent << 4) | mantissa);
-    return ulaw;
+    float scale = (float)sample / ceil_16;
+    float muLawVal = log(1 + mu * scale) / log(mu + 1);
+
+    return (int8_t)(muLawVal * 127) * sign;
 }
 
 void loop() {
-    // Read and print the microphone voltage level
-    float readValue1 = analogRead(A17);
-    float voltage1 = (readValue1 * (5.0 / 1023.0)) * 1000;
-    Serial.println(voltage1);
+    if (queue1.available() > 0) {
+        uint8_t buffer[packetSize];
+        int16_t *samples = queue1.readBuffer();
 
-    // Process audio data when available
-    if (queue1.available()) {  
-        uint8_t buffer[packetSize];  // Buffer to store processed audio data
-        int16_t *samples = queue1.readBuffer(); // Get audio samples from queue
-
-        if (samples) { 
+        if (samples) {
             for (int i = 0; i < packetSize; i++) {
-                buffer[i] = muLawEncode(samples[i]); // Encode samples using μ-Law
+                buffer[i] = muLawEncode(samples[i]);
             }
-            
-            queue1.freeBuffer(); // Free memory after processing
-            rf69.send(buffer, packetSize);  // Send data packet via RFM69
-            rf69.waitPacketSent();          // Ensure packet is fully transmitted
-            
-            // Debugging: Print sent packet data
-            Serial.print("Sent Packet: ");
-            for (int i = 0; i < packetSize; i++) {
-                Serial.print(buffer[i], HEX);
-                Serial.print(" ");
-            }
-            Serial.println();
+            queue1.freeBuffer();
         }
+
+        rf69.send(buffer, packetSize);
+        rf69.waitPacketSent();
+
+        Serial.print("Sent Packet: ");
+        for (int i = 0; i < packetSize; i++) {
+            Serial.print(buffer[i], HEX);
+            Serial.print(" ");
+        }
+        Serial.println();
     }
 }
