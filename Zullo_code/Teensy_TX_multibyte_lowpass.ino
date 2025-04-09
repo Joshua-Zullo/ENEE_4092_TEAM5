@@ -23,6 +23,10 @@ int prevTime = 0;
 int8_t packCoun = 0; //stores packet number 1-4
 int8_t radiopacket[12]; //radio packet of uLaw PCM value
 
+//GPT lowpass 
+float alpha = 0.1; // Control the cutoff frequency; adjust as needed
+int16_t prevFilteredValue = 0; // Stores the previous filtered value
+
 /************ Radio Setup ***************/
 
 // Change to 434.0 or other frequency, must match RX's freq!
@@ -79,6 +83,13 @@ int16_t normV(int16_t Vin){
     Vin = Vin*scale; //multiply to reach full 16-bit value
     return Vin; }  
 
+// Simple low-pass filter function
+int16_t lowPassFilter(int16_t inputValue) {
+    int16_t filteredValue = (int16_t)(alpha * inputValue + (1 - alpha) * prevFilteredValue);
+    prevFilteredValue = filteredValue;
+    return filteredValue;
+}
+
 void setup() {
   Serial.begin(115200);
   while (!Serial) { delay(1); } // wait until serial console is open, remove if not tethered to computer
@@ -134,7 +145,11 @@ void loop() {
     Vin = normV(Vin); //Vin normalized
     Serial.println(Vin); //print norm Vin
     //Serial.print(",");
+        
+    // Apply the low-pass filter
+    Vin = lowPassFilter(Vin);  // Apply the low-pass filter
 
+        Serial.println(Vin); // Print filtered Vin
     int8_t enPCM = muLaw(Vin);    // 8 bit int enPCM which equal to log PCM value
     //Serial.print(float(enPCM)/127.0f, 12);    //print uLAW value
     //Serial.print(",");
