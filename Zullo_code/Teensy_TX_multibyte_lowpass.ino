@@ -36,7 +36,7 @@ int16_t prevFilteredValue = 0; // Stores the previous filtered value
 //This is a limitation of the RadioHead radio drivers
 
 #define RFM69_RST     6 // RST to pin "x" (maybe 8)
-#define RFM69_CS      7 // CS to pin "y"  (maybe 7)
+#define RFM69_CS      10 // CS to pin "y"  (maybe 10)
 #define RFM69_INT     digitalPinToInterrupt(8)  //G0, hardware interupt (maybe 6)
 
 // Singleton instance of the radio driver
