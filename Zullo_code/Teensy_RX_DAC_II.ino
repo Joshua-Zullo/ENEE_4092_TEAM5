@@ -31,8 +31,27 @@ const int ceil_16 = 32768; //ceiling of 16 bit signed integer (2^15)
 
 //=====================
 
+// Singleton instance of the radio driver
+RH_RF69 rf69(RFM69_CS, RFM69_INT);
+
+//undo log scaling on 8 bit value, return to 16-bit PCM
+int16_t imuLaw(int8_t muVal){
+    int sign = 1; //store sign 
+     if (muVal <0){    // is muVal<0? 
+        sign = -1;	//store sign
+        muVal = muVal*sign; } //take ABS(muVal)
+    
+    float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
+    float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
+    imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
+    
+    int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
+	
+    return result;}
+
+
 // Set up the Teensy Audio Library components
-AudioOutputAnalog dacOut;  // Output to DAC (pin A14 on Teensy 4.1)
+AudioOutputI2S audioOut;
 
 // This class is a custom audio stream that pulls from your RF buffer and sends decoded samples to the DAC
 class RadioAudioStream : public AudioStream {
@@ -53,6 +72,8 @@ public:
         bufferTail = (bufferTail + 1) % bufferSize;
         bufferCount--;
         sample = imuLaw(compSamp);  // Decode to 16-bit PCM
+        Serial.println(sample);
+        //Serial.println(compSamp);
         lastSample = sample;
       } else {
         sample = lastSample;  // If no data, repeat last sample to avoid clicking
@@ -72,30 +93,14 @@ private:
 
 // Instantiate the stream and connect it to the DAC
 RadioAudioStream myRadioStream;
-AudioConnection patchCord1(myRadioStream, 0, dacOut, 0);
+AudioConnection patchCord1(myRadioStream, 0, audioOut, 0);
 
-// Singleton instance of the radio driver
-RH_RF69 rf69(RFM69_CS, RFM69_INT);
-
-//undo log scaling on 8 bit value, return to 16-bit PCM
-int16_t imuLaw(int8_t muVal){
-    int sign = 1; //store sign 
-     if (muVal <0){    // is muVal<0? 
-        sign = -1;	//store sign
-        muVal = muVal*sign; } //take ABS(muVal)
-    
-    float scaleMu = float(muVal)/ 127.0f; //convert to floating point -1<x<1 from 8 bit scale
-    float imuVal = (pow(256, scaleMu)-1)/mu;  //undo log scale
-    imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
-    
-    int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
-	
-    return result;}
 
 void storePacket(uint8_t *data, int len) {
     for (int i = 0; i < len; i++) {
         if (bufferCount < bufferSize) {  // Ensure buffer does not overflow
             audioBuffer[bufferHead] = data[i];  // Store byte in buffer
+            //Serial.println(data[i]);
             bufferHead = (bufferHead + 1) % bufferSize;  // Move head pointer (wraps around if needed)
             bufferCount++;  // Increase stored byte count
         }
@@ -104,6 +109,12 @@ void storePacket(uint8_t *data, int len) {
 
 
 void setup() {
+
+  AudioControlSGTL5000 sgtl5000;
+
+  AudioMemory(16);
+  sgtl5000.enable();
+  sgtl5000.volume(0.5);  // Set volume (0.0 to 1.0)
 
   AudioMemory(8);  // Allocates audio memory blocks (each block = 128 samples). 8 is enough for basic streaming
   
