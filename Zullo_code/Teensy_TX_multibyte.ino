@@ -9,7 +9,6 @@
 //declare general constants
 const int scale = 78; //scale Vin to full 16 bit value
 const int offset = 388;    //offset DC bias (1.25V ~388 ADC)
-const int del = 10; //ms delay in printing values
 const int ceil_16 = 32768; //ceiling of 16 bit integer value (Absolute value)   
 const int mu = 255; //steps for uLaw, 8 bit value (0-255 = 2^8)
 const int micPin = 41; //analog input pin
@@ -73,14 +72,6 @@ int16_t imuLaw(int8_t muVal){
     imuVal = sign*imuVal*ceil_16; //scale back to normal PCM range
     int16_t result = (int16_t)imuVal;  //convert float to 16 bit integer
     return result;}
-
-//not normally utilized
-void Blink(byte PIN, byte DELAY_MS, byte loops) {
-  for (byte i=0; i<loops; i++)  {
-    digitalWrite(PIN,HIGH);
-    delay(DELAY_MS);
-    digitalWrite(PIN,LOW);
-    delay(DELAY_MS);}}
 
 //scale Vin. Takes argument (Vin)
 int16_t normV(int16_t Vin){
